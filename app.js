@@ -5,7 +5,10 @@ const bodyParser=require("body-parser");
 const ejs=require("ejs");
 const app=express();
 const mongoose=require("mongoose");
-const md5=require("md5");
+const bcrypt=require("bcrypt");
+const saltRounds=0;
+
+//const md5=require("md5");
 //const mencrypt=require("mongoose-encryption")
 
 //console.log(process.env.API_KEY);
@@ -16,7 +19,7 @@ app.use(bodyParser.urlencoded({
     extended:true
 }))
 
-mongoose.connect("mongodb://localhost:27017/userDB",{useNewUrlParser:true});
+mongoose.connect("mongodb://127.0.0.1/userDB",{useNewUrlParser:true});
 const userSchema=new mongoose.Schema({
     email:String,
     password:String
@@ -25,6 +28,7 @@ const userSchema=new mongoose.Schema({
 //userSchema.plugin(mencrypt,{secret:process.env.SECRET,encryptedFields:["password"]})
 
 const User = new mongoose.model("User",userSchema);
+
 app.get("/",function(req,res){
     res.render("home")
 })
@@ -38,15 +42,19 @@ app.get("/register",function(req,res){
 })
 
 app.post("/register",function(req,res){
-    const user1= new User({
-        email:req.body.username,
-        password:md5(req.body.password)
-    })
-    user1.save().then(()=>{
-            res.render("secrets");
-            
+    bcrypt.hash(req.body.password,saltRounds,function(hash){
+        const user1= new User({
+            email:req.body.username,
+            password:hash
+        })
+        user1.save().then(()=>{
+                res.render("secrets");
+                
+    
+        })
 
     })
+    
 })
 
 app.post("/login",function(req,res){
@@ -55,11 +63,14 @@ app.post("/login",function(req,res){
     User.findOne({email:name}).then(function(found){
         if(found)
         {
-            if(found.password===password){
-                res.render("secrets")
-                console.log(password)
-            }
-        }
+        //     bcrypt.compare(password,found.password).then(function(result){
+        //         if(result===true){
+                    res.render("secrets");
+        //         }
+        //     })
+                
+        // //         //console.log(password)
+       }
     })
 })
 app.listen(3000,function(){
